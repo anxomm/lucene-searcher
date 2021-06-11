@@ -16,13 +16,14 @@ import org.apache.lucene.store.FSDirectory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.*;
 
 public class ManualRelevanceFeedbackNPL {
 
-    private static final String QUERIES_FILE = "/home/anxomm/Desktop/RI/angel.miguelez.millos/npl/query-text";
-    private static final String ASSESSMENTS_FILE = "/home/anxomm/Desktop/RI/angel.miguelez.millos/npl/rlv-ass";
+    private final static String CONFIG_FILE = "config.properties";
+    private static Map<String,String> properties;
 
     public static void main(String[] args) {
         String usage = "java es.udc.fic.ri.mri_searcher.ManualRelevanceFeedbackNPL"
@@ -52,6 +53,19 @@ public class ManualRelevanceFeedbackNPL {
             } else if ("-query".equals(args[i])) {
                 queryQ = Integer.parseInt(args[++i]);
             }
+        }
+
+        final String QUERIES_FILE = getProperty("queries");
+        final String ASSESSMENTS_FILE = getProperty("reldocs");
+
+        if (QUERIES_FILE == null) {
+            System.err.println("Queries file must be specified at config.properties");
+            System.exit(-1);
+        }
+
+        if (ASSESSMENTS_FILE == null) {
+            System.err.println("Relevant documents file must be specified at config.properties");
+            System.exit(-1);
         }
 
         if (model == null || indexPath == null || metrica == null) {
@@ -227,4 +241,20 @@ public class ManualRelevanceFeedbackNPL {
         return assessments;
     }
 
+    private static String getProperty(String name) {
+        if (properties == null) {
+            ClassLoader classLoader = ManualRelevanceFeedbackNPL.class.getClassLoader();
+            InputStream inputStream = classLoader.getResourceAsStream(CONFIG_FILE);
+            Properties properties = new Properties();
+            try {
+                properties.load(inputStream);
+                inputStream.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            ManualRelevanceFeedbackNPL.properties = (Map<String, String>) new HashMap(properties);
+        }
+        return properties.get(name);
+    }
 }
